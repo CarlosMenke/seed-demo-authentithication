@@ -50,12 +50,23 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
 
 // `view` describes what to display.
 fn view(model: &Model) -> Node<Msg> {
+    let button_style =
+        style!(St::BackgroundColor => "green", St::Margin => "10px", St::BorderRadius=> "5px");
     div![
         "This is a counter: ",
         model.counter,
         C!["counter"],
-        button![ev(Ev::Click, |_| Msg::Increment), "Increment"],
-        button![ev(Ev::Click, |_| Msg::Decrement), "Decrement"],
+        button![
+            ev(Ev::Click, |_| Msg::Increment),
+            "Increment",
+            &button_style
+        ],
+        button![
+            &button_style,
+            IF!( model.counter > 0  => ev(Ev::Click, |_| Msg::Decrement)),
+            IF!( model.counter == 0 => style!(St::BackgroundColor => "red")),
+            "Decrement",
+        ],
     ]
 }
 
