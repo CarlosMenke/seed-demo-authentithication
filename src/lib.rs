@@ -41,6 +41,7 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
         Msg::Increment => model.counter += 1,
         Msg::Decrement => model.counter -= 1,
     }
+    log!("Updated counter to {:?}", model.counter);
 }
 
 // ------ ------
