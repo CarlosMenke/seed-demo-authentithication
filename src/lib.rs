@@ -41,7 +41,7 @@ struct Model {
     counter: i32,
     pub new_message: String,
     pub response_data: Option<SendMessageResponseBody>,
-    pub response_dataGet: Option<SendMessageResponseBodyGet>,
+    pub response_data_get: Option<SendMessageResponseBodyGet>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -86,7 +86,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::GetRequest => {
             orders
                 .skip()
-                .perform_cmd({ async { Msg::FetchedGet(get_message().await) } });
+                .perform_cmd(async { Msg::FetchedGet(get_message().await) });
         }
 
         Msg::Fetched(Ok(response_data)) => {
@@ -101,7 +101,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
         Msg::FetchedGet(Ok(response_data)) => {
             log!("fetched data: {:?}", &response_data);
-            model.response_dataGet = Some(response_data);
+            model.response_data_get = Some(response_data);
         }
 
         Msg::FetchedGet(Err(fetch_error)) => {
@@ -156,7 +156,7 @@ fn view(model: &Model) -> Node<Msg> {
             "Decrement",
         ],
         view_message(&model.response_data),
-        view_messageGet(&model.response_dataGet),
+        view_message_get(&model.response_data_get),
         input![
             input_ev(Ev::Input, Msg::NewMessageChanged),
             attrs! {
@@ -180,7 +180,7 @@ fn view_message(message: &Option<SendMessageResponseBody>) -> Node<Msg> {
     )],]
 }
 
-fn view_messageGet(message: &Option<SendMessageResponseBodyGet>) -> Node<Msg> {
+fn view_message_get(message: &Option<SendMessageResponseBodyGet>) -> Node<Msg> {
     let message = match message {
         Some(message) => message,
         None => return empty![],
