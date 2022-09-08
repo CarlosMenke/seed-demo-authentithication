@@ -4,34 +4,12 @@
 #![allow(clippy::wildcard_imports)]
 
 use seed::{prelude::*, *};
-use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct SendMessageRequestBody {
-    pub text: String,
-}
+mod api;
+mod model;
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct SendMessageResponseBody {
-    pub ordinal_number: u32,
-    pub text: String,
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct SendMessageResponseBodyGet {
-    pub ordinal_number: u32,
-    pub text: String,
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct SendMessageResponseBodyGetVec {
-    pub response: Vec<SendMessageResponseBodyGet>,
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct ResponseHtml {
-    pub html: String,
-}
+use crate::model::*;
+use api::requests::*;
 
 // ------ ------
 //     Init
@@ -40,21 +18,6 @@ pub struct ResponseHtml {
 // `init` describes what should happen when your app started.
 fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
     Model::default()
-}
-
-// ------ ------
-//     Model
-// ------ ------
-
-// `Model` describes our app state.
-#[derive(Default)]
-struct Model {
-    counter: i32,
-    pub new_message: String,
-    pub response_html: Option<ResponseHtml>,
-    pub response_data: Option<SendMessageResponseBody>,
-    pub response_data_get: Option<SendMessageResponseBodyGet>,
-    pub response_data_get_vec: Option<SendMessageResponseBodyGetVec>,
 }
 
 // ------ ------
@@ -147,42 +110,6 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     };
 }
 
-async fn send_message(new_message: String) -> fetch::Result<SendMessageResponseBody> {
-    fetch(
-        Request::new("http://127.0.0.1:8084/test_post.json")
-            .method(Method::Post)
-            //.mode(web_sys::RequestMode::NoCors)
-            .json(&SendMessageRequestBody { text: new_message })?,
-    )
-    .await?
-    .check_status()?
-    .json()
-    .await
-}
-
-async fn get_message() -> fetch::Result<SendMessageResponseBodyGet> {
-    fetch("http://127.0.0.1:8084/test_get.json")
-        .await?
-        .check_status()?
-        .json()
-        .await
-}
-
-async fn get_vec_message() -> fetch::Result<SendMessageResponseBodyGetVec> {
-    fetch("http://127.0.0.1:8084/test_get_vec.json")
-        .await?
-        .check_status()?
-        .json()
-        .await
-}
-
-async fn get_html() -> fetch::Result<ResponseHtml> {
-    fetch("http://127.0.0.1:8084/test_html.html")
-        .await?
-        .check_status()?
-        .json()
-        .await
-}
 // ------ ------
 //     View
 // ------ ------
