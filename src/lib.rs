@@ -16,6 +16,12 @@ pub struct SendMessageResponseBody {
     pub ordinal_number: u32,
     pub text: String,
 }
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct SendMessageResponseBodyGet {
+    pub ordinal_number: u32,
+    pub text: String,
+}
 // ------ ------
 //     Init
 // ------ ------
@@ -35,6 +41,7 @@ struct Model {
     counter: i32,
     pub new_message: String,
     pub response_data: Option<SendMessageResponseBody>,
+    pub response_dataGet: Option<SendMessageResponseBodyGet>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -56,7 +63,9 @@ enum Msg {
     Decrement,
     NewMessageChanged(String),
     SendRequest,
+    GetRequest,
     Fetched(fetch::Result<SendMessageResponseBody>),
+    FetchedGet(fetch::Result<SendMessageResponseBodyGet>),
 }
 
 // `update` describes how to handle each `Msg`.
@@ -74,6 +83,11 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 async { Msg::Fetched(send_message(message).await) }
             });
         }
+        Msg::GetRequest => {
+            orders
+                .skip()
+                .perform_cmd({ async { Msg::FetchedGet(get_message().await) } });
+        }
 
         Msg::Fetched(Ok(response_data)) => {
             log!("fetched data: {:?}", &response_data);
@@ -81,6 +95,16 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         }
 
         Msg::Fetched(Err(fetch_error)) => {
+            log!("Example_A error:", fetch_error);
+            orders.skip();
+        }
+
+        Msg::FetchedGet(Ok(response_data)) => {
+            log!("fetched data: {:?}", &response_data);
+            model.response_dataGet = Some(response_data);
+        }
+
+        Msg::FetchedGet(Err(fetch_error)) => {
             log!("Example_A error:", fetch_error);
             orders.skip();
         }
@@ -98,6 +122,14 @@ async fn send_message(new_message: String) -> fetch::Result<SendMessageResponseB
     .check_status()?
     .json()
     .await
+}
+
+async fn get_message() -> fetch::Result<SendMessageResponseBodyGet> {
+    fetch("http://127.0.0.1:8084/test_get.json")
+        .await?
+        .check_status()?
+        .json()
+        .await
 }
 
 // ------ ------
@@ -124,6 +156,7 @@ fn view(model: &Model) -> Node<Msg> {
             "Decrement",
         ],
         view_message(&model.response_data),
+        view_messageGet(&model.response_dataGet),
         input![
             input_ev(Ev::Input, Msg::NewMessageChanged),
             attrs! {
@@ -132,6 +165,7 @@ fn view(model: &Model) -> Node<Msg> {
             }
         ],
         button![ev(Ev::Click, |_| Msg::SendRequest), "Send message"],
+        button![ev(Ev::Click, |_| Msg::GetRequest), "Get message"],
     ]
 }
 
@@ -145,6 +179,18 @@ fn view_message(message: &Option<SendMessageResponseBody>) -> Node<Msg> {
         message.ordinal_number, message.text
     )],]
 }
+
+fn view_messageGet(message: &Option<SendMessageResponseBodyGet>) -> Node<Msg> {
+    let message = match message {
+        Some(message) => message,
+        None => return empty![],
+    };
+    div![div![format!(
+        r#""{}". message: "{}""#,
+        message.ordinal_number, message.text
+    )],]
+}
+
 // ------ ------
 //     Start
 // ------ ------
