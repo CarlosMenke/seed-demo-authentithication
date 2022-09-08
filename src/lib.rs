@@ -22,16 +22,6 @@ pub struct SendMessageResponseBody {
 
 // `init` describes what should happen when your app started.
 fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
-    /*
-    Model {
-        counter: 0,
-        user: Some(User {
-            id: 32,
-            username: "Carlos".to_owned(),
-            password: "jkl".to_owned(),
-        }),
-    }
-    */
     Model::default()
 }
 
@@ -86,7 +76,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         }
 
         Msg::Fetched(Ok(response_data)) => {
-            log!("fetched data: {:?}", Some(&response_data));
+            log!("fetched data: {:?}", &response_data);
             model.response_data = Some(response_data);
         }
 
@@ -98,15 +88,16 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 }
 
 async fn send_message(new_message: String) -> fetch::Result<SendMessageResponseBody> {
-    Request::new("http://127.0.0.1:8084/test_post.json")
-        .method(Method::Post)
-        .mode(web_sys::RequestMode::NoCors)
-        .json(&SendMessageRequestBody { text: new_message })?
-        .fetch()
-        .await?
-        .check_status()?
-        .json()
-        .await
+    fetch(
+        Request::new("http://127.0.0.1:8084/test_post.json")
+            .method(Method::Post)
+            //.mode(web_sys::RequestMode::NoCors)
+            .json(&SendMessageRequestBody { text: new_message })?,
+    )
+    .await?
+    .check_status()?
+    .json()
+    .await
 }
 
 // ------ ------
@@ -150,7 +141,7 @@ fn view_message(message: &Option<SendMessageResponseBody>) -> Node<Msg> {
         None => return empty![],
     };
     div![div![format!(
-        r#"{}. message: "{}""#,
+        r#""{}". message: "{}""#,
         message.ordinal_number, message.text
     )],]
 }
