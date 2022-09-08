@@ -27,6 +27,12 @@ pub struct SendMessageResponseBodyGet {
 pub struct SendMessageResponseBodyGetVec {
     pub response: Vec<SendMessageResponseBodyGet>,
 }
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ResponseHtml {
+    pub html: String,
+}
+
 // ------ ------
 //     Init
 // ------ ------
@@ -45,16 +51,10 @@ fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
 struct Model {
     counter: i32,
     pub new_message: String,
+    pub response_html: Option<String>,
     pub response_data: Option<SendMessageResponseBody>,
     pub response_data_get: Option<SendMessageResponseBodyGet>,
     pub response_data_get_vec: Option<SendMessageResponseBodyGetVec>,
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-struct User {
-    id: i32,
-    username: String,
-    password: String,
 }
 
 // ------ ------
@@ -71,9 +71,11 @@ enum Msg {
     SendRequest,
     GetRequest,
     GetVecRequest,
+    GetHtmlRequest,
     Fetched(fetch::Result<SendMessageResponseBody>),
     FetchedGet(fetch::Result<SendMessageResponseBodyGet>),
     FetchedGetVec(fetch::Result<SendMessageResponseBodyGetVec>),
+    FetchedHtml(fetch::Result<String>),
 }
 
 // `update` describes how to handle each `Msg`.
@@ -101,6 +103,11 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 .skip()
                 .perform_cmd(async { Msg::FetchedGetVec(get_vec_message().await) });
         }
+        Msg::GetHtmlRequest => {
+            orders
+                .skip()
+                .perform_cmd(async { Msg::FetchedHtml(get_html().await) });
+        }
 
         Msg::Fetched(Ok(response_data)) => {
             log!("fetched data: {:?}", &response_data);
@@ -125,6 +132,15 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             model.response_data_get_vec = Some(response_data);
         }
         Msg::FetchedGetVec(Err(fetch_error)) => {
+            log!("Example_A error:", fetch_error);
+            orders.skip();
+        }
+
+        Msg::FetchedHtml(Ok(response_data)) => {
+            log!("fetched data: {:?}", &response_data);
+            model.response_html = Some(response_data);
+        }
+        Msg::FetchedHtml(Err(fetch_error)) => {
             log!("Example_A error:", fetch_error);
             orders.skip();
         }
@@ -160,6 +176,13 @@ async fn get_vec_message() -> fetch::Result<SendMessageResponseBodyGetVec> {
         .await
 }
 
+async fn get_html() -> fetch::Result<String> {
+    fetch("http://127.0.0.1:8084/test_html")
+        .await?
+        .check_status()?
+        .text()
+        .await
+}
 // ------ ------
 //     View
 // ------ ------
@@ -186,6 +209,7 @@ fn view(model: &Model) -> Node<Msg> {
         view_message(&model.response_data),
         view_message_get(&model.response_data_get),
         view_message_get_vec(&model.response_data_get_vec),
+        view_message_html(&model.response_html),
         input![
             input_ev(Ev::Input, Msg::NewMessageChanged),
             attrs! {
@@ -196,6 +220,7 @@ fn view(model: &Model) -> Node<Msg> {
         button![ev(Ev::Click, |_| Msg::SendRequest), "Send message"],
         button![ev(Ev::Click, |_| Msg::GetRequest), "Get message"],
         button![ev(Ev::Click, |_| Msg::GetVecRequest), "Get Vec message"],
+        button![ev(Ev::Click, |_| Msg::GetHtmlRequest), "Get Html message"],
     ]
 }
 
@@ -236,6 +261,14 @@ fn view_message_get_vec(message: &Option<SendMessageResponseBodyGetVec>) -> Node
             )]
         })
     ]
+}
+
+fn view_message_html(message: &Option<String>) -> Node<Msg> {
+    let message = match message {
+        Some(message) => message,
+        None => return empty![],
+    };
+    div![raw![message],]
 }
 
 // ------ ------
