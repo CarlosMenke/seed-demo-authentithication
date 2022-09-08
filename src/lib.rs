@@ -221,6 +221,7 @@ fn view(model: &Model) -> Node<Msg> {
         button![ev(Ev::Click, |_| Msg::GetRequest), "Get message"],
         button![ev(Ev::Click, |_| Msg::GetVecRequest), "Get Vec message"],
         button![ev(Ev::Click, |_| Msg::GetHtmlRequest), "Get Html message"],
+        raw![include_str!("../static/music_all.html")]
     ]
 }
 
