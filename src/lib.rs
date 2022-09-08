@@ -22,6 +22,11 @@ pub struct SendMessageResponseBodyGet {
     pub ordinal_number: u32,
     pub text: String,
 }
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct SendMessageResponseBodyGetVec {
+    pub response: Vec<SendMessageResponseBodyGet>,
+}
 // ------ ------
 //     Init
 // ------ ------
@@ -42,6 +47,7 @@ struct Model {
     pub new_message: String,
     pub response_data: Option<SendMessageResponseBody>,
     pub response_data_get: Option<SendMessageResponseBodyGet>,
+    pub response_data_get_vec: Option<SendMessageResponseBodyGetVec>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -64,8 +70,10 @@ enum Msg {
     NewMessageChanged(String),
     SendRequest,
     GetRequest,
+    GetVecRequest,
     Fetched(fetch::Result<SendMessageResponseBody>),
     FetchedGet(fetch::Result<SendMessageResponseBodyGet>),
+    FetchedGetVec(fetch::Result<SendMessageResponseBodyGetVec>),
 }
 
 // `update` describes how to handle each `Msg`.
@@ -88,12 +96,16 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 .skip()
                 .perform_cmd(async { Msg::FetchedGet(get_message().await) });
         }
+        Msg::GetVecRequest => {
+            orders
+                .skip()
+                .perform_cmd(async { Msg::FetchedGetVec(get_vec_message().await) });
+        }
 
         Msg::Fetched(Ok(response_data)) => {
             log!("fetched data: {:?}", &response_data);
             model.response_data = Some(response_data);
         }
-
         Msg::Fetched(Err(fetch_error)) => {
             log!("Example_A error:", fetch_error);
             orders.skip();
@@ -103,8 +115,16 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!("fetched data: {:?}", &response_data);
             model.response_data_get = Some(response_data);
         }
-
         Msg::FetchedGet(Err(fetch_error)) => {
+            log!("Example_A error:", fetch_error);
+            orders.skip();
+        }
+
+        Msg::FetchedGetVec(Ok(response_data)) => {
+            log!("fetched data: {:?}", &response_data);
+            model.response_data_get_vec = Some(response_data);
+        }
+        Msg::FetchedGetVec(Err(fetch_error)) => {
             log!("Example_A error:", fetch_error);
             orders.skip();
         }
@@ -126,6 +146,14 @@ async fn send_message(new_message: String) -> fetch::Result<SendMessageResponseB
 
 async fn get_message() -> fetch::Result<SendMessageResponseBodyGet> {
     fetch("http://127.0.0.1:8084/test_get.json")
+        .await?
+        .check_status()?
+        .json()
+        .await
+}
+
+async fn get_vec_message() -> fetch::Result<SendMessageResponseBodyGetVec> {
+    fetch("http://127.0.0.1:8084/test_get_vec.json")
         .await?
         .check_status()?
         .json()
@@ -157,6 +185,7 @@ fn view(model: &Model) -> Node<Msg> {
         ],
         view_message(&model.response_data),
         view_message_get(&model.response_data_get),
+        view_message_get_vec(&model.response_data_get_vec),
         input![
             input_ev(Ev::Input, Msg::NewMessageChanged),
             attrs! {
@@ -166,6 +195,7 @@ fn view(model: &Model) -> Node<Msg> {
         ],
         button![ev(Ev::Click, |_| Msg::SendRequest), "Send message"],
         button![ev(Ev::Click, |_| Msg::GetRequest), "Get message"],
+        button![ev(Ev::Click, |_| Msg::GetVecRequest), "Get Vec message"],
     ]
 }
 
@@ -189,6 +219,23 @@ fn view_message_get(message: &Option<SendMessageResponseBodyGet>) -> Node<Msg> {
         r#""{}". message: "{}""#,
         message.ordinal_number, message.text
     )],]
+}
+
+fn view_message_get_vec(message: &Option<SendMessageResponseBodyGetVec>) -> Node<Msg> {
+    let message = match message {
+        Some(message) => message,
+        None => return empty![],
+    };
+
+    div![
+        C!["response-list"],
+        message.response.iter().map(|value| {
+            ul![format!(
+                r#""{}". message: "{}""#,
+                value.ordinal_number, value.text
+            )]
+        })
+    ]
 }
 
 // ------ ------
