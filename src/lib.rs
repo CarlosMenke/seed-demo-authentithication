@@ -51,7 +51,7 @@ fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
 struct Model {
     counter: i32,
     pub new_message: String,
-    pub response_html: Option<String>,
+    pub response_html: Option<ResponseHtml>,
     pub response_data: Option<SendMessageResponseBody>,
     pub response_data_get: Option<SendMessageResponseBodyGet>,
     pub response_data_get_vec: Option<SendMessageResponseBodyGetVec>,
@@ -75,7 +75,7 @@ enum Msg {
     Fetched(fetch::Result<SendMessageResponseBody>),
     FetchedGet(fetch::Result<SendMessageResponseBodyGet>),
     FetchedGetVec(fetch::Result<SendMessageResponseBodyGetVec>),
-    FetchedHtml(fetch::Result<String>),
+    FetchedHtml(fetch::Result<ResponseHtml>),
 }
 
 // `update` describes how to handle each `Msg`.
@@ -176,11 +176,11 @@ async fn get_vec_message() -> fetch::Result<SendMessageResponseBodyGetVec> {
         .await
 }
 
-async fn get_html() -> fetch::Result<String> {
-    fetch("http://127.0.0.1:8084/test_html")
+async fn get_html() -> fetch::Result<ResponseHtml> {
+    fetch("http://127.0.0.1:8084/test_html.html")
         .await?
         .check_status()?
-        .text()
+        .json()
         .await
 }
 // ------ ------
@@ -263,12 +263,12 @@ fn view_message_get_vec(message: &Option<SendMessageResponseBodyGetVec>) -> Node
     ]
 }
 
-fn view_message_html(message: &Option<String>) -> Node<Msg> {
+fn view_message_html(message: &Option<ResponseHtml>) -> Node<Msg> {
     let message = match message {
         Some(message) => message,
         None => return empty![],
     };
-    div![raw![message],]
+    div![raw![&message.html],]
 }
 
 // ------ ------
