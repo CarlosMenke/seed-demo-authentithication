@@ -7,45 +7,56 @@ use seed::{prelude::*, *};
 
 mod api;
 mod model;
+mod view;
 
 use crate::model::*;
 use api::requests::*;
+use view::view::*;
 
 // ------ ------
 //     Init
 // ------ ------
 
-// `init` describes what should happen when your app started.
-fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
-    Model::default()
+fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
+    log!("Base URL {:?}", url);
+    //orders.subscribe(Msg::UrlChanged);
+    Model::new(url, orders.clone_base_path())
 }
 
-// ------ ------
-//    Update
-// ------ ------
-
-// (Remove the line below once any of your `Msg` variants doesn't implement `Copy`.)
-#[derive()]
-// `Msg` describes the different events you can modify state with.
-enum Msg {
+pub enum Msg {
     Increment,
     Decrement,
+
+    UrlChanged(subs::UrlChanged),
+    GoToUrl(Url),
+
     NewMessageChanged(String),
     SendRequest,
     GetRequest,
     GetVecRequest,
     GetHtmlRequest,
+
     Fetched(fetch::Result<SendMessageResponseBody>),
     FetchedGet(fetch::Result<SendMessageResponseBodyGet>),
     FetchedGetVec(fetch::Result<SendMessageResponseBodyGetVec>),
     FetchedHtml(fetch::Result<ResponseHtml>),
 }
 
-// `update` describes how to handle each `Msg`.
+// ------ ------
+//    Update
+// ------ ------
+
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
         Msg::Increment => model.counter += 1,
         Msg::Decrement => model.counter -= 1,
+
+        Msg::UrlChanged(subs::UrlChanged(url)) => {
+            *model = Model::new(url, orders.clone_base_path());
+        }
+        Msg::GoToUrl(url) => {
+            orders.request_url(url);
+        }
 
         Msg::NewMessageChanged(message) => {
             model.new_message = message;
@@ -148,55 +159,9 @@ fn view(model: &Model) -> Node<Msg> {
         button![ev(Ev::Click, |_| Msg::GetRequest), "Get message"],
         button![ev(Ev::Click, |_| Msg::GetVecRequest), "Get Vec message"],
         button![ev(Ev::Click, |_| Msg::GetHtmlRequest), "Get Html message"],
-        raw![include_str!("../static/music_all.html")]
+        view_music(),
+        view_url(&model),
     ]
-}
-
-fn view_message(message: &Option<SendMessageResponseBody>) -> Node<Msg> {
-    let message = match message {
-        Some(message) => message,
-        None => return empty![],
-    };
-    div![div![format!(
-        r#""{}". message: "{}""#,
-        message.ordinal_number, message.text
-    )],]
-}
-
-fn view_message_get(message: &Option<SendMessageResponseBodyGet>) -> Node<Msg> {
-    let message = match message {
-        Some(message) => message,
-        None => return empty![],
-    };
-    div![div![format!(
-        r#""{}". message: "{}""#,
-        message.ordinal_number, message.text
-    )],]
-}
-
-fn view_message_get_vec(message: &Option<SendMessageResponseBodyGetVec>) -> Node<Msg> {
-    let message = match message {
-        Some(message) => message,
-        None => return empty![],
-    };
-
-    div![
-        C!["response-list"],
-        message.response.iter().map(|value| {
-            ul![format!(
-                r#""{}". message: "{}""#,
-                value.ordinal_number, value.text
-            )]
-        })
-    ]
-}
-
-fn view_message_html(message: &Option<ResponseHtml>) -> Node<Msg> {
-    let message = match message {
-        Some(message) => message,
-        None => return empty![],
-    };
-    div![raw![&message.html],]
 }
 
 // ------ ------
