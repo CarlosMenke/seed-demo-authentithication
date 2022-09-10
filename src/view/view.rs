@@ -2,11 +2,17 @@ use crate::model::*;
 use crate::Msg;
 use seed::{prelude::*, *};
 
-pub fn view_music() -> Vec<Node<Msg>> {
-    raw![include_str!("../../static/music_all.html")]
+pub fn view_music_depth_1<Ms>() -> Vec<Node<Ms>> {
+    raw![include_str!("../../static/music_depth_1.html")]
+}
+pub fn view_music_depth_2<Ms>() -> Vec<Node<Ms>> {
+    raw![include_str!("../../static/music_depth_2.html")]
+}
+pub fn view_music_depth_3<Ms>() -> Vec<Node<Ms>> {
+    raw![include_str!("../../static/music_depth_3.html")]
 }
 
-fn view_message(message: &Option<SendMessageResponseBody>) -> Node<Msg> {
+pub fn view_message(message: &Option<SendMessageResponseBody>) -> Node<Msg> {
     let message = match message {
         Some(message) => message,
         None => return empty![],
@@ -17,7 +23,7 @@ fn view_message(message: &Option<SendMessageResponseBody>) -> Node<Msg> {
     )],]
 }
 
-fn view_message_get(message: &Option<SendMessageResponseBodyGet>) -> Node<Msg> {
+pub fn view_message_get(message: &Option<SendMessageResponseBodyGet>) -> Node<Msg> {
     let message = match message {
         Some(message) => message,
         None => return empty![],
@@ -28,7 +34,7 @@ fn view_message_get(message: &Option<SendMessageResponseBodyGet>) -> Node<Msg> {
     )],]
 }
 
-fn view_message_get_vec(message: &Option<SendMessageResponseBodyGetVec>) -> Node<Msg> {
+pub fn view_message_get_vec(message: &Option<SendMessageResponseBodyGetVec>) -> Node<Msg> {
     let message = match message {
         Some(message) => message,
         None => return empty![],
@@ -45,7 +51,7 @@ fn view_message_get_vec(message: &Option<SendMessageResponseBodyGetVec>) -> Node
     ]
 }
 
-fn view_message_html(message: &Option<ResponseHtml>) -> Node<Msg> {
+pub fn view_message_html(message: &Option<ResponseHtml>) -> Node<Msg> {
     let message = match message {
         Some(message) => message,
         None => return empty![],
@@ -53,18 +59,18 @@ fn view_message_html(message: &Option<ResponseHtml>) -> Node<Msg> {
     div![raw![&message.html],]
 }
 
-fn view_url(model: &Model) -> Node<Msg> {
+pub fn view_url(model: &Model) -> Node<Msg> {
     ol![
         li![
             button![
-                "Go to '/ui/a/b/c?x=1?#hash'` and reload the page",
+                "Go to '/music/depth1'` and reload the page",
                 ev(Ev::Click, |_| {
                     Url::new()
-                        .set_path(&["ui", "a", "b", "c"])
-                        .set_search(UrlSearch::new(vec![
-                            ("x", vec!["1"])
-                        ]))
-                        .set_hash("hash")
+                        .set_path(&["music"])
+                        //.set_search(UrlSearch::new(vec![
+                            //("depth", vec!["1"])
+                        //]))
+                        //.set_hash("hash")
                         .go_and_load();
                 })
             ],
@@ -114,5 +120,18 @@ fn view_url(model: &Model) -> Node<Msg> {
                 })
             ],
         ],
+    ]
+}
+
+pub fn header(base_url: &Url) -> Node<Msg> {
+    ul![
+        li![a![
+            attrs! { At::Href => Urls::new(base_url).home() },
+            "Home",
+        ]],
+        li![a![
+            attrs! { At::Href => Urls::new(base_url).music_urls().root() },
+            "Music",
+        ]],
     ]
 }

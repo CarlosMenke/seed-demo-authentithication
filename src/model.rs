@@ -1,4 +1,5 @@
-use seed::{prelude::*, *};
+use crate::page;
+use seed::*;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
 
@@ -39,7 +40,9 @@ pub struct Model {
     pub next_path_part: Option<String>,
     pub remaining_path_parts: Vec<String>,
     pub base_url: Url,
-    //pub page: Page,
+    pub page_id: Option<PageId>,
+    pub music_model: Option<page::music::Model>,
+
     pub counter: i32,
     pub new_message: String,
     pub response_html: Option<ResponseHtml>,
@@ -64,6 +67,8 @@ impl Model {
                 .into_iter()
                 .map(ToOwned::to_owned)
                 .collect(),
+            page_id: None,
+            music_model: None,
             counter: 0,
             new_message: "".to_string(),
             response_html: Some(ResponseHtml::default()),
@@ -71,5 +76,30 @@ impl Model {
             response_data_get: Some(SendMessageResponseBodyGet::default()),
             response_data_get_vec: Some(SendMessageResponseBodyGetVec::default()),
         }
+    }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq)]
+pub enum PageId {
+    Home,
+    Music,
+}
+impl PageId {
+    pub fn name(self) -> String {
+        match self {
+            PageId::Home => "Home".to_string(),
+            PageId::Music => "Music".to_string(),
+        }
+    }
+}
+
+struct_urls!();
+impl<'a> Urls<'a> {
+    pub fn home(self) -> Url {
+        self.base_url()
+    }
+    pub fn music_urls(self) -> page::music::Urls<'a> {
+        //TODO replace Music with constant
+        page::music::Urls::new(self.base_url().add_path_part(PageId::Music.name()))
     }
 }
