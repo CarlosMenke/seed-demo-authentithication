@@ -142,20 +142,33 @@ fn view(model: &Model) -> Node<Msg> {
     let button_style =
         style!(St::BackgroundColor => "green", St::Margin => "10px", St::BorderRadius=> "5px");
     div![
-        //header(&model.base_url),
-        "This is a counter: ",
-        model.counter,
-        C!["counter"],
-        button![
-            ev(Ev::Click, |_| Msg::Increment),
-            "Increment",
-            &button_style
-        ],
-        button![
-            &button_style,
-            IF!( model.counter > 0  => ev(Ev::Click, |_| Msg::Decrement)),
-            IF!( model.counter == 0 => style!(St::BackgroundColor => "red")),
-            "Decrement",
+        header(&model.base_url),
+        match model.page_id {
+            Some(PageId::Home) => div!["Welcome home!"],
+            Some(PageId::Music) => {
+                page::music::view(
+                    model.music_model.as_ref().expect("admin model"),
+                    &model.counter,
+                )
+            }
+            None => div!["404 Page not found"],
+        },
+        div![
+            "This is a counter: ",
+            model.counter,
+            C!["counter"],
+            button![
+                &button_style,
+                IF!( model.counter < 3  => ev(Ev::Click, |_| Msg::Increment)),
+                IF!( model.counter >= 3 => style!(St::BackgroundColor => "red")),
+                "Increment",
+            ],
+            button![
+                &button_style,
+                IF!( model.counter > 1  => ev(Ev::Click, |_| Msg::Decrement)),
+                IF!( model.counter == 1 => style!(St::BackgroundColor => "red")),
+                "Decrement",
+            ],
         ],
         view_message(&model.response_data),
         view_message_get(&model.response_data_get),
@@ -172,19 +185,7 @@ fn view(model: &Model) -> Node<Msg> {
         button![ev(Ev::Click, |_| Msg::GetRequest), "Get message"],
         button![ev(Ev::Click, |_| Msg::GetVecRequest), "Get Vec message"],
         button![ev(Ev::Click, |_| Msg::GetHtmlRequest), "Get Html message"],
-        //view_music(),
-        view_url(&model),
-        header(&model.base_url),
-        match model.page_id {
-            Some(PageId::Home) => div!["Welcome home!"],
-            Some(PageId::Music) => {
-                page::music::view(
-                    model.music_model.as_ref().expect("admin model"),
-                    &model.counter,
-                )
-            }
-            None => div!["404 Page not found"],
-        },
+        //view_url(&model),
     ]
 }
 

@@ -69,7 +69,7 @@ impl Model {
                 .collect(),
             page_id: None,
             music_model: None,
-            counter: 0,
+            counter: 1,
             new_message: "".to_string(),
             response_html: Some(ResponseHtml::default()),
             response_data: Some(SendMessageResponseBody::default()),
