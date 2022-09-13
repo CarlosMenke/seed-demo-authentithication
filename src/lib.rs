@@ -39,11 +39,15 @@ pub enum Msg {
     GetRequest,
     GetVecRequest,
     GetHtmlRequest,
+    GetLoginRequest,
+    GetAdminRequest,
 
-    Fetched(fetch::Result<SendMessageResponseBody>),
+    Fetched(fetch::Result<SendMessageResponseBodyGet>),
     FetchedGet(fetch::Result<SendMessageResponseBodyGet>),
     FetchedGetVec(fetch::Result<SendMessageResponseBodyGetVec>),
     FetchedHtml(fetch::Result<ResponseHtml>),
+    FetchedLogin(fetch::Result<LoginMessageResponseBody>),
+    FetchedGetAdmin(fetch::Result<SendMessageResponseBodyGet>),
 }
 
 // ------ ------
@@ -61,6 +65,9 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 //TODO get music from impl for URLs
                 Some("Music") => {
                     page::music::init(url, &mut model.music_model).map(|_| PageId::Music)
+                }
+                Some("Admin") => {
+                    page::admin::init(url, &mut model.admin_model).map(|_| PageId::Admin)
                 }
                 Some(_) => None,
             };
@@ -93,6 +100,18 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             orders
                 .skip()
                 .perform_cmd(async { Msg::FetchedHtml(get_html().await) });
+        }
+        Msg::GetLoginRequest => {
+            orders.skip().perform_cmd({
+                let name = model.login_name.clone();
+                async { Msg::FetchedLogin(get_login(name).await) }
+            });
+        }
+        Msg::GetAdminRequest => {
+            orders.skip().perform_cmd({
+                let token = model.response_login.clone().unwrap().token;
+                async { Msg::FetchedGetAdmin(get_admin(token).await) }
+            });
         }
 
         Msg::Fetched(Ok(response_data)) => {
@@ -130,6 +149,24 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!("Example_A error:", fetch_error);
             orders.skip();
         }
+
+        Msg::FetchedLogin(Ok(response_data)) => {
+            log!("fetched data: {:?}", &response_data);
+            model.response_login = Some(response_data);
+        }
+        Msg::FetchedLogin(Err(fetch_error)) => {
+            log!("Example_A error:", fetch_error);
+            orders.skip();
+        }
+
+        Msg::FetchedGetAdmin(Ok(response_data)) => {
+            log!("fetched data: {:?}", &response_data);
+            model.response_admin = Some(response_data);
+        }
+        Msg::FetchedGetAdmin(Err(fetch_error)) => {
+            log!("Example_A error:", fetch_error);
+            orders.skip();
+        }
     };
 }
 
@@ -147,8 +184,14 @@ fn view(model: &Model) -> Node<Msg> {
             Some(PageId::Home) => div!["Welcome home!"],
             Some(PageId::Music) => {
                 page::music::view(
-                    model.music_model.as_ref().expect("admin model"),
+                    model.music_model.as_ref().expect("music model"),
                     &model.counter,
+                )
+            }
+            Some(PageId::Admin) => {
+                page::admin::view(
+                    model.admin_model.as_ref().expect("admin model"),
+                    &model.response_login,
                 )
             }
             None => div!["404 Page not found"],
@@ -170,6 +213,7 @@ fn view(model: &Model) -> Node<Msg> {
                 "Decrement",
             ],
         ],
+        view_token(&model.response_login),
         view_message(&model.response_data),
         view_message_get(&model.response_data_get),
         view_message_get_vec(&model.response_data_get_vec),
@@ -185,7 +229,8 @@ fn view(model: &Model) -> Node<Msg> {
         button![ev(Ev::Click, |_| Msg::GetRequest), "Get message"],
         button![ev(Ev::Click, |_| Msg::GetVecRequest), "Get Vec message"],
         button![ev(Ev::Click, |_| Msg::GetHtmlRequest), "Get Html message"],
-        //view_url(&model),
+        button![ev(Ev::Click, |_| Msg::GetLoginRequest), "Get Login message"],
+        button![ev(Ev::Click, |_| Msg::GetAdminRequest), "Get Admin data"],
     ]
 }
 

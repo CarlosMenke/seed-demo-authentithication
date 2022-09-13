@@ -12,7 +12,7 @@ pub fn view_music_depth_3<Ms>() -> Vec<Node<Ms>> {
     raw![include_str!("../../static/music_depth_3.html")]
 }
 
-pub fn view_message(message: &Option<SendMessageResponseBody>) -> Node<Msg> {
+pub fn view_message(message: &Option<SendMessageResponseBodyGet>) -> Node<Msg> {
     let message = match message {
         Some(message) => message,
         None => return empty![],
@@ -133,5 +133,17 @@ pub fn header(base_url: &Url) -> Node<Msg> {
             attrs! { At::Href => Urls::new(base_url).music_urls().root() },
             "Music",
         ]],
+        li![a![
+            attrs! { At::Href => Urls::new(base_url).admin_urls().root() },
+            "Admin",
+        ]],
     ]
+}
+
+pub fn view_token<Ms>(message: &Option<LoginMessageResponseBody>) -> Node<Ms> {
+    let message = match message {
+        Some(message) => message,
+        None => return empty![],
+    };
+    div!["The toekn is: ", &message.token]
 }
