@@ -4,7 +4,7 @@ use seed::prelude::*;
 
 pub async fn send_message(new_message: String) -> fetch::Result<SendMessageResponseBody> {
     fetch(
-        Request::new(get_api_url(String::from("test_post.json")))
+        Request::new(get_api_url(String::from("test/post.json")))
             .method(Method::Post)
             //.mode(web_sys::RequestMode::NoCors)
             .json(&SendMessageRequestBody { text: new_message })?,
@@ -16,7 +16,8 @@ pub async fn send_message(new_message: String) -> fetch::Result<SendMessageRespo
 }
 
 pub async fn get_message() -> fetch::Result<SendMessageResponseBodyGet> {
-    fetch(get_api_url(String::from("test_get.json")))
+    Request::new(get_api_url(String::from("test/get.json")))
+        .fetch()
         .await?
         .check_status()?
         .json()
@@ -24,7 +25,7 @@ pub async fn get_message() -> fetch::Result<SendMessageResponseBodyGet> {
 }
 
 pub async fn get_vec_message() -> fetch::Result<SendMessageResponseBodyGetVec> {
-    fetch(get_api_url(String::from("test_get_vec.json")))
+    fetch(get_api_url(String::from("test/get_vec.json")))
         .await?
         .check_status()?
         .json()
@@ -32,7 +33,7 @@ pub async fn get_vec_message() -> fetch::Result<SendMessageResponseBodyGetVec> {
 }
 
 pub async fn get_html() -> fetch::Result<ResponseHtml> {
-    fetch(get_api_url(String::from("test_html.html")))
+    fetch(get_api_url(String::from("test/html.html")))
         .await?
         .check_status()?
         .json()
