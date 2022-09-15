@@ -56,7 +56,7 @@ pub async fn get_login(name: String) -> fetch::Result<LoginMessageResponseBody> 
 }
 
 pub async fn get_admin(token: String) -> fetch::Result<SendMessageResponseBodyGet> {
-    Request::new(get_api_url(String::from("test/auth/admin")))
+    Request::new(get_api_url(String::from("test/auth/admin.json")))
         .header(Header::bearer(token))
         .fetch()
         .await?

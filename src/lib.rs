@@ -118,52 +118,38 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!("fetched data: {:?}", &response_data);
             model.response_data = Some(response_data);
         }
-        Msg::Fetched(Err(fetch_error)) => {
-            log!("Example_A error:", fetch_error);
-            orders.skip();
-        }
 
         Msg::FetchedGet(Ok(response_data)) => {
             log!("fetched data: {:?}", &response_data);
             model.response_data_get = Some(response_data);
-        }
-        Msg::FetchedGet(Err(fetch_error)) => {
-            log!("Example_A error:", fetch_error);
-            orders.skip();
         }
 
         Msg::FetchedGetVec(Ok(response_data)) => {
             log!("fetched data: {:?}", &response_data);
             model.response_data_get_vec = Some(response_data);
         }
-        Msg::FetchedGetVec(Err(fetch_error)) => {
-            log!("Example_A error:", fetch_error);
-            orders.skip();
-        }
 
         Msg::FetchedHtml(Ok(response_data)) => {
             log!("fetched data: {:?}", &response_data);
             model.response_html = Some(response_data);
-        }
-        Msg::FetchedHtml(Err(fetch_error)) => {
-            log!("Example_A error:", fetch_error);
-            orders.skip();
         }
 
         Msg::FetchedLogin(Ok(response_data)) => {
             log!("fetched data: {:?}", &response_data);
             model.response_login = Some(response_data);
         }
-        Msg::FetchedLogin(Err(fetch_error)) => {
-            log!("Example_A error:", fetch_error);
-            orders.skip();
-        }
 
         Msg::FetchedGetAdmin(Ok(response_data)) => {
             log!("fetched data: {:?}", &response_data);
             model.response_admin = Some(response_data);
         }
-        Msg::FetchedGetAdmin(Err(fetch_error)) => {
+
+        Msg::Fetched(Err(fetch_error))
+        | Msg::FetchedGet(Err(fetch_error))
+        | Msg::FetchedGetVec(Err(fetch_error))
+        | Msg::FetchedHtml(Err(fetch_error))
+        | Msg::FetchedLogin(Err(fetch_error))
+        | Msg::FetchedGetAdmin(Err(fetch_error)) => {
             log!("Example_A error:", fetch_error);
             orders.skip();
         }
@@ -176,8 +162,9 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
 // `view` describes what to display.
 fn view(model: &Model) -> Node<Msg> {
-    let button_style =
-        style!(St::BackgroundColor => "green", St::Margin => "10px", St::BorderRadius=> "5px");
+    let button_style = style!(
+    St::BackgroundColor => "green", St::Margin => px(10), St::Padding => px(5), St::PaddingLeft => px(10), St::PaddingRight => px(10),  St::BorderRadius => px(15), St::Border => px(0)
+    );
     div![
         header(&model.base_url),
         match model.page_id {
@@ -201,19 +188,20 @@ fn view(model: &Model) -> Node<Msg> {
             model.counter,
             C!["counter"],
             button![
+                C!["button"],
                 &button_style,
                 IF!( model.counter < 3  => ev(Ev::Click, |_| Msg::Increment)),
                 IF!( model.counter >= 3 => style!(St::BackgroundColor => "red")),
                 "Increment",
             ],
             button![
+                C!["button"],
                 &button_style,
                 IF!( model.counter > 1  => ev(Ev::Click, |_| Msg::Decrement)),
                 IF!( model.counter == 1 => style!(St::BackgroundColor => "red")),
                 "Decrement",
             ],
         ],
-        view_token(&model.response_login),
         view_message(&model.response_data),
         view_message_get(&model.response_data_get),
         view_message_get_vec(&model.response_data_get_vec),
