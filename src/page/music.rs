@@ -10,12 +10,8 @@ const DEPTH3: &str = "3";
 //     Init
 // ------ ------
 
-pub fn init(mut url: Url, model: &mut Option<Model>) -> Option<()> {
-    let model = model.get_or_insert_with(|| Model {
-        base_url: url.to_base_url(),
-        depth: Depth::Depth1,
-    });
-
+pub fn init(mut url: Url, model: &mut impl Orders<Msg>) -> Model {
+    /*
     model.depth = match url.remaining_path_parts().as_slice() {
         [] => {
             match model.depth {
@@ -28,9 +24,13 @@ pub fn init(mut url: Url, model: &mut Option<Model>) -> Option<()> {
         [DEPTH1] => Depth::Depth1,
         [DEPTH2] => Depth::Depth2,
         [DEPTH3] => Depth::Depth3,
-        _ => None?,
+        _ => Depth::Depth1,
     };
-    Some(())
+    */
+    Model {
+        base_url: url.to_base_url(),
+        depth: Depth::Depth1,
+    }
 }
 
 // ------ ------
@@ -51,6 +51,7 @@ enum Depth {
     Depth3,
 }
 
+pub struct Msg {}
 // ------ ------
 //     Urls
 // ------ ------
@@ -71,11 +72,12 @@ impl<'a> Urls<'a> {
     }
 }
 
+pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {}
 // ------ ------
 //     View
 // ------ ------
 
-pub fn view<Ms>(model: &Model, counter: &i32) -> Node<Ms> {
+pub fn view<Ms>(model: &Model) -> Node<Ms> {
     let (depth, link, view_music) = match &model.depth {
         Depth::Depth1 => (
             DEPTH1,

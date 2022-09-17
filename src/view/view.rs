@@ -1,5 +1,6 @@
 use crate::model::*;
 use crate::Msg;
+use crate::{Model, Urls};
 use seed::{prelude::*, *};
 
 pub fn view_music_depth_1<Ms>() -> Vec<Node<Ms>> {
@@ -12,7 +13,7 @@ pub fn view_music_depth_3<Ms>() -> Vec<Node<Ms>> {
     raw![include_str!("../../static/music_depth_3.html")]
 }
 
-pub fn view_message(message: &Option<SendMessageResponseBodyGet>) -> Node<Msg> {
+pub fn view_message<Ms>(message: &Option<SendMessageResponseBodyGet>) -> Node<Ms> {
     let message = match message {
         Some(message) => message,
         None => return empty![],
@@ -23,7 +24,7 @@ pub fn view_message(message: &Option<SendMessageResponseBodyGet>) -> Node<Msg> {
     )],]
 }
 
-pub fn view_message_get(message: &Option<SendMessageResponseBodyGet>) -> Node<Msg> {
+pub fn view_message_get<Ms>(message: &Option<SendMessageResponseBodyGet>) -> Node<Ms> {
     let message = match message {
         Some(message) => message,
         None => return empty![],
@@ -34,7 +35,7 @@ pub fn view_message_get(message: &Option<SendMessageResponseBodyGet>) -> Node<Ms
     )],]
 }
 
-pub fn view_message_get_vec(message: &Option<SendMessageResponseBodyGetVec>) -> Node<Msg> {
+pub fn view_message_get_vec<Ms>(message: &Option<SendMessageResponseBodyGetVec>) -> Node<Ms> {
     let message = match message {
         Some(message) => message,
         None => return empty![],
@@ -51,7 +52,7 @@ pub fn view_message_get_vec(message: &Option<SendMessageResponseBodyGetVec>) -> 
     ]
 }
 
-pub fn view_message_html(message: &Option<ResponseHtml>) -> Node<Msg> {
+pub fn view_message_html<Ms>(message: &Option<ResponseHtml>) -> Node<Ms> {
     let message = match message {
         Some(message) => message,
         None => return empty![],
@@ -61,65 +62,40 @@ pub fn view_message_html(message: &Option<ResponseHtml>) -> Node<Msg> {
 
 pub fn view_url(model: &Model) -> Node<Msg> {
     ol![
-        li![
-            button![
-                "Go to '/music/depth1'` and reload the page",
-                ev(Ev::Click, |_| {
-                    Url::new()
-                        .set_path(&["music"])
-                        //.set_search(UrlSearch::new(vec![
-                            //("depth", vec!["1"])
-                        //]))
-                        //.set_hash("hash")
-                        .go_and_load();
-                })
-            ],
-        ],
-        li![
-            format!("Base path ...... \"{}\"  ......  (comment out `base` element in `index.html`, refresh the page and watch changes)", &model.base_path.join("/")),
-        ],
-        li![
-            format!("Initial Url ...... \"{}\"", &model.initial_url),
-        ],
-        li![
-            format!("Base Url ...... \"{}\"  ......  (the path part is the most important here)", &model.base_url),
-        ],
-        li![
-            format!("Next path part ...... \"{:?}\"", &model.next_path_part),
-        ],
-        li![
-            format!("Remaining path parts ...... \"{:?}\"", &model.remaining_path_parts),
-        ],
-        li![
-            button![
-                "Go to '/' and don't trigger `UrlChanged`",
-                ev(Ev::Click, |_| {
-                    Url::new().go_and_push();
-                })
-            ],
-        ],
-        li![
-            button![
-                "Go back",
-                ev(Ev::Click, |_| {
-                    Url::go_back(1);
-                })
-            ],
-        ],
-        li![
-            button![
-                "Go to '/' and trigger `UrlChanged` (simulate `<a>` link click)",
-                ev(Ev::Click, |_| Msg::GoToUrl(Url::new()))
-            ],
-        ],
-        li![
-            button![
-                "Go to 'https://example.com'",
-                ev(Ev::Click, |_| {
-                    Url::go_and_load_with_str("https://example.com");
-                })
-            ],
-        ],
+        li![button![
+            "Go to '/music/depth1'` and reload the page",
+            ev(Ev::Click, |_| {
+                Url::new()
+                    .set_path(&["music"])
+                    //.set_search(UrlSearch::new(vec![
+                    //("depth", vec!["1"])
+                    //]))
+                    //.set_hash("hash")
+                    .go_and_load();
+            })
+        ],],
+        li![button![
+            "Go to '/' and don't trigger `UrlChanged`",
+            ev(Ev::Click, |_| {
+                Url::new().go_and_push();
+            })
+        ],],
+        li![button![
+            "Go back",
+            ev(Ev::Click, |_| {
+                Url::go_back(1);
+            })
+        ],],
+        li![button![
+            "Go to '/' and trigger `UrlChanged` (simulate `<a>` link click)",
+            ev(Ev::Click, |_| Msg::GoToUrl(Url::new()))
+        ],],
+        li![button![
+            "Go to 'https://example.com'",
+            ev(Ev::Click, |_| {
+                Url::go_and_load_with_str("https://example.com");
+            })
+        ],],
     ]
 }
 
@@ -130,12 +106,12 @@ pub fn header(base_url: &Url) -> Node<Msg> {
             "Home",
         ]],
         li![a![
-            attrs! { At::Href => Urls::new(base_url).music_urls().root() },
-            "Music",
+            attrs! { At::Href => Urls::new(base_url).admin() },
+            "Admin",
         ]],
         li![a![
-            attrs! { At::Href => Urls::new(base_url).admin_urls().root() },
-            "Admin",
+            attrs! { At::Href => Urls::new(base_url).music() },
+            "Music",
         ]],
     ]
 }

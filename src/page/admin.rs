@@ -9,20 +9,23 @@ use crate::{
 //     Init
 // ------ ------
 
-pub fn init(mut url: Url, model: &mut Option<Model>) -> Option<()> {
-    let model = model.get_or_insert_with(|| Model {
+pub fn init(mut url: Url, model: &mut impl Orders<Msg>) -> Model {
+    Model {
         base_url: url.to_base_url(),
-    });
-    Some(())
+        counter: 0,
+    }
 }
 
-pub enum Msg {}
+pub enum Msg {
+    Increment,
+}
 // ------ ------
 //     Model
 // ------ ------
 
 pub struct Model {
     base_url: Url,
+    counter: i32,
 }
 
 // ------ Frequency ------
@@ -38,17 +41,26 @@ impl<'a> Urls<'a> {
     }
 }
 
-fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
-    match msg {};
+pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
+    match msg {
+        Msg::Increment => model.counter += 1,
+    };
 }
 
 // ------ ------
 //     View
 // ------ ------
 
-pub fn view<Ms>(model: &Model, response_login: &Option<LoginMessageResponseBody>) -> Node<Ms> {
+pub fn view(model: &Model) -> Node<Msg> {
     div![
-        view_token(response_login),
+        //view_token(response_login),
         //TODO fetch data here
+        button![
+            C!["button"],
+            IF!( model.counter < 3  => ev(Ev::Click, |_| Msg::Increment)),
+            IF!( model.counter >= 3 => style!(St::BackgroundColor => "red")),
+            "Increment",
+        ],
+        model.counter,
     ]
 }

@@ -1,6 +1,3 @@
-// (Lines like the one below ignore selected Clippy rules
-//  - it's useful when you want to check your code with `cargo make verify`
-// but some rules are too "annoying" or are not applicable for your case.)
 #![allow(clippy::wildcard_imports)]
 
 use seed::{prelude::*, *};
@@ -12,8 +9,12 @@ mod view;
 
 use crate::model::*;
 use api::requests::*;
+use std::rc::Rc;
 use view::view::*;
 
+const MUSIC: &str = "Music";
+const ADMIN: &str = "Admin";
+const HOME: &str = "Home";
 // ------ ------
 //     Init
 // ------ ------
@@ -24,30 +25,76 @@ fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
     orders
         .subscribe(Msg::UrlChanged)
         .notify(subs::UrlChanged(url.clone()));
-    Model::new(url, orders.clone_base_path())
+    Model {
+        base_url: url.to_base_url(),
+        page: Page::init(url, orders, &None),
+        ctx: None,
+    }
+}
+
+// ------ ------
+//     Model
+// ------ ------
+
+//TODO cleanup
+pub struct Model {
+    pub base_url: Url,
+    pub page: Page,
+    pub ctx: Option<LoginMessageResponseBody>,
+}
+
+pub enum Page {
+    Home(page::home::Model),
+    Music(page::music::Model),
+    Admin(page::admin::Model),
+    NotFound,
+}
+impl Page {
+    fn init(
+        mut url: Url,
+        orders: &mut impl Orders<Msg>,
+        ctx: &Option<LoginMessageResponseBody>,
+    ) -> Self {
+        match url.remaining_path_parts().as_slice() {
+            [ADMIN] => Self::Admin(page::admin::init(url, &mut orders.proxy(Msg::AdminMsg))),
+            [MUSIC] => Self::Music(page::music::init(url, &mut orders.proxy(Msg::MusicMsg))),
+            [] => Self::Home(page::home::init(
+                url,
+                &mut orders.proxy(Msg::HomeMsg),
+                ctx.clone(),
+            )),
+            _ => Self::NotFound,
+        }
+    }
+}
+
+// ------ ------
+//     Urls
+// ------ ------
+
+struct_urls!();
+impl<'a> Urls<'a> {
+    fn home(self) -> Url {
+        self.base_url()
+    }
+    fn admin(self) -> Url {
+        self.base_url().add_path_part(ADMIN)
+    }
+    fn music(self) -> Url {
+        self.base_url().add_path_part(MUSIC)
+    }
 }
 
 pub enum Msg {
-    Increment,
-    Decrement,
-
     UrlChanged(subs::UrlChanged),
     GoToUrl(Url),
 
-    NewMessageChanged(String),
-    SendRequest,
-    GetRequest,
-    GetVecRequest,
-    GetHtmlRequest,
     GetLoginRequest,
-    GetAdminRequest,
-
-    Fetched(fetch::Result<SendMessageResponseBodyGet>),
-    FetchedGet(fetch::Result<SendMessageResponseBodyGet>),
-    FetchedGetVec(fetch::Result<SendMessageResponseBodyGetVec>),
-    FetchedHtml(fetch::Result<ResponseHtml>),
     FetchedLogin(fetch::Result<LoginMessageResponseBody>),
-    FetchedGetAdmin(fetch::Result<SendMessageResponseBodyGet>),
+
+    MusicMsg(page::music::Msg),
+    AdminMsg(page::admin::Msg),
+    HomeMsg(page::home::Msg),
 }
 
 // ------ ------
@@ -56,102 +103,43 @@ pub enum Msg {
 
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
-        Msg::Increment => model.counter += 1,
-        Msg::Decrement => model.counter -= 1,
-
-        Msg::UrlChanged(subs::UrlChanged(mut url)) => {
-            model.page_id = match url.next_path_part() {
-                None => Some(PageId::Home),
-                //TODO get music from impl for URLs
-                Some("Music") => {
-                    page::music::init(url, &mut model.music_model).map(|_| PageId::Music)
-                }
-                Some("Admin") => {
-                    page::admin::init(url, &mut model.admin_model).map(|_| PageId::Admin)
-                }
-                Some(_) => None,
-            };
-        }
+        Msg::UrlChanged(subs::UrlChanged(url)) => model.page = Page::init(url, orders, &model.ctx),
         //TODO check if needed
         Msg::GoToUrl(url) => {
             orders.request_url(url);
         }
 
-        Msg::NewMessageChanged(message) => {
-            model.new_message = message;
-        }
-        Msg::SendRequest => {
-            orders.skip().perform_cmd({
-                let message = model.new_message.clone();
-                async { Msg::Fetched(send_message(message).await) }
-            });
-        }
-        Msg::GetRequest => {
-            orders
-                .skip()
-                .perform_cmd(async { Msg::FetchedGet(get_message().await) });
-        }
-        Msg::GetVecRequest => {
-            orders
-                .skip()
-                .perform_cmd(async { Msg::FetchedGetVec(get_vec_message().await) });
-        }
-        Msg::GetHtmlRequest => {
-            orders
-                .skip()
-                .perform_cmd(async { Msg::FetchedHtml(get_html().await) });
-        }
         Msg::GetLoginRequest => {
             orders.skip().perform_cmd({
-                let name = model.login_name.clone();
+                let name = "Carlos".to_string();
                 async { Msg::FetchedLogin(get_login(name).await) }
             });
         }
-        Msg::GetAdminRequest => {
-            orders.skip().perform_cmd({
-                let token = model.response_login.clone().unwrap().token;
-                async { Msg::FetchedGetAdmin(get_admin(token).await) }
-            });
-        }
-
-        Msg::Fetched(Ok(response_data)) => {
+        Msg::FetchedLogin(Ok(mut response_data)) => {
             log!("fetched data: {:?}", &response_data);
-            model.response_data = Some(response_data);
+            model.ctx = Some(response_data);
         }
 
-        Msg::FetchedGet(Ok(response_data)) => {
-            log!("fetched data: {:?}", &response_data);
-            model.response_data_get = Some(response_data);
-        }
-
-        Msg::FetchedGetVec(Ok(response_data)) => {
-            log!("fetched data: {:?}", &response_data);
-            model.response_data_get_vec = Some(response_data);
-        }
-
-        Msg::FetchedHtml(Ok(response_data)) => {
-            log!("fetched data: {:?}", &response_data);
-            model.response_html = Some(response_data);
-        }
-
-        Msg::FetchedLogin(Ok(response_data)) => {
-            log!("fetched data: {:?}", &response_data);
-            model.response_login = Some(response_data);
-        }
-
-        Msg::FetchedGetAdmin(Ok(response_data)) => {
-            log!("fetched data: {:?}", &response_data);
-            model.response_admin = Some(response_data);
-        }
-
-        Msg::Fetched(Err(fetch_error))
-        | Msg::FetchedGet(Err(fetch_error))
-        | Msg::FetchedGetVec(Err(fetch_error))
-        | Msg::FetchedHtml(Err(fetch_error))
-        | Msg::FetchedLogin(Err(fetch_error))
-        | Msg::FetchedGetAdmin(Err(fetch_error)) => {
+        Msg::FetchedLogin(Err(fetch_error)) => {
             log!("Example_A error:", fetch_error);
             orders.skip();
+        }
+
+        // ------- Page
+        Msg::AdminMsg(msg) => {
+            if let Page::Admin(model) = &mut model.page {
+                page::admin::update(msg, model, &mut orders.proxy(Msg::AdminMsg))
+            }
+        }
+        Msg::HomeMsg(msg) => {
+            if let Page::Home(model) = &mut model.page {
+                page::home::update(msg, model, &mut orders.proxy(Msg::HomeMsg))
+            }
+        }
+        Msg::MusicMsg(msg) => {
+            if let Page::Music(model) = &mut model.page {
+                page::music::update(msg, model, &mut orders.proxy(Msg::MusicMsg))
+            }
         }
     };
 }
@@ -162,63 +150,17 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
 // `view` describes what to display.
 fn view(model: &Model) -> Node<Msg> {
-    let button_style = style!(
-    St::BackgroundColor => "green", St::Margin => px(10), St::Padding => px(5), St::PaddingLeft => px(10), St::PaddingRight => px(10),  St::BorderRadius => px(15), St::Border => px(0)
-    );
+    let base = LoginMessageResponseBody::default();
     div![
+        &model.ctx.as_ref().unwrap_or(&base).token,
         header(&model.base_url),
-        match model.page_id {
-            Some(PageId::Home) => div!["Welcome home!"],
-            Some(PageId::Music) => {
-                page::music::view(
-                    model.music_model.as_ref().expect("music model"),
-                    &model.counter,
-                )
-            }
-            Some(PageId::Admin) => {
-                page::admin::view(
-                    model.admin_model.as_ref().expect("admin model"),
-                    &model.response_login,
-                )
-            }
-            None => div!["404 Page not found"],
-        },
-        div![
-            "This is a counter: ",
-            model.counter,
-            C!["counter"],
-            button![
-                C!["button"],
-                &button_style,
-                IF!( model.counter < 3  => ev(Ev::Click, |_| Msg::Increment)),
-                IF!( model.counter >= 3 => style!(St::BackgroundColor => "red")),
-                "Increment",
-            ],
-            button![
-                C!["button"],
-                &button_style,
-                IF!( model.counter > 1  => ev(Ev::Click, |_| Msg::Decrement)),
-                IF!( model.counter == 1 => style!(St::BackgroundColor => "red")),
-                "Decrement",
-            ],
-        ],
-        view_message(&model.response_data),
-        view_message_get(&model.response_data_get),
-        view_message_get_vec(&model.response_data_get_vec),
-        view_message_html(&model.response_html),
-        input![
-            input_ev(Ev::Input, Msg::NewMessageChanged),
-            attrs! {
-                At::Value => model.new_message,
-                At::AutoFocus => AtValue::None,
-            }
-        ],
-        button![ev(Ev::Click, |_| Msg::SendRequest), "Send message"],
-        button![ev(Ev::Click, |_| Msg::GetRequest), "Get message"],
-        button![ev(Ev::Click, |_| Msg::GetVecRequest), "Get Vec message"],
-        button![ev(Ev::Click, |_| Msg::GetHtmlRequest), "Get Html message"],
         button![ev(Ev::Click, |_| Msg::GetLoginRequest), "Get Login message"],
-        button![ev(Ev::Click, |_| Msg::GetAdminRequest), "Get Admin data"],
+        match &model.page {
+            Page::Home(model) => page::home::view(&model).map_msg(Msg::HomeMsg),
+            Page::Admin(model) => page::admin::view(&model).map_msg(Msg::AdminMsg),
+            Page::Music(model) => page::music::view(&model).map_msg(Msg::MusicMsg),
+            Page::NotFound => page::not_found::view(),
+        }
     ]
 }
 
