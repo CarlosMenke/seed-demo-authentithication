@@ -14,7 +14,6 @@ use view::view::*;
 
 const MUSIC: &str = "Music";
 const ADMIN: &str = "Admin";
-const HOME: &str = "Home";
 // ------ ------
 //     Init
 // ------ ------
@@ -55,10 +54,11 @@ impl Page {
         orders: &mut impl Orders<Msg>,
         ctx: &Option<LoginMessageResponseBody>,
     ) -> Self {
-        match url.remaining_path_parts().as_slice() {
-            [ADMIN] => Self::Admin(page::admin::init(url, &mut orders.proxy(Msg::AdminMsg))),
-            [MUSIC] => Self::Music(page::music::init(url, &mut orders.proxy(Msg::MusicMsg))),
-            [] => Self::Home(page::home::init(
+        //match url.remaining_path_parts().as_slice() {
+        match url.next_path_part() {
+            Some(ADMIN) => Self::Admin(page::admin::init(url, &mut orders.proxy(Msg::AdminMsg))),
+            Some(MUSIC) => Self::Music(page::music::init(url, &mut orders.proxy(Msg::MusicMsg))),
+            None => Self::Home(page::home::init(
                 url,
                 &mut orders.proxy(Msg::HomeMsg),
                 ctx.clone(),
@@ -80,8 +80,9 @@ impl<'a> Urls<'a> {
     fn admin(self) -> Url {
         self.base_url().add_path_part(ADMIN)
     }
-    fn music(self) -> Url {
-        self.base_url().add_path_part(MUSIC)
+    fn music(self) -> page::music::Urls<'a> {
+        //self.base_url().add_path_part(MUSIC);
+        page::music::Urls::new(self.base_url().add_path_part(MUSIC))
     }
 }
 

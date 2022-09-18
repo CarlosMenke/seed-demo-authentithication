@@ -110,7 +110,7 @@ pub fn header(base_url: &Url) -> Node<Msg> {
             "Admin",
         ]],
         li![a![
-            attrs! { At::Href => Urls::new(base_url).music() },
+            attrs! { At::Href => Urls::new(base_url).music().default() },
             "Music",
         ]],
     ]

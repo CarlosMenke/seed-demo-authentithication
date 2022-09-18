@@ -11,25 +11,20 @@ const DEPTH3: &str = "3";
 // ------ ------
 
 pub fn init(mut url: Url, model: &mut impl Orders<Msg>) -> Model {
-    /*
-    model.depth = match url.remaining_path_parts().as_slice() {
-        [] => {
-            match model.depth {
-                Depth::Depth1 => Urls::new(&model.base_url).depth1().go_and_replace(),
-                Depth::Depth2 => Urls::new(&model.base_url).depth2().go_and_replace(),
-                Depth::Depth3 => Urls::new(&model.base_url).depth3().go_and_replace(),
-            }
-            model.depth
-        }
+    let base_url = url.to_base_url();
+    let depth_init = match url.remaining_path_parts().as_slice() {
         [DEPTH1] => Depth::Depth1,
         [DEPTH2] => Depth::Depth2,
         [DEPTH3] => Depth::Depth3,
+        [] => {
+            Urls::new(&base_url).default().go_and_replace();
+            Depth::Depth1
+        }
         _ => Depth::Depth1,
     };
-    */
     Model {
-        base_url: url.to_base_url(),
-        depth: Depth::Depth1,
+        base_url: base_url,
+        depth: depth_init,
     }
 }
 
@@ -44,14 +39,13 @@ pub struct Model {
 
 // ------ Frequency ------
 
-#[derive(Copy, Clone)]
 enum Depth {
     Depth1,
     Depth2,
     Depth3,
 }
 
-pub struct Msg {}
+pub enum Msg {}
 // ------ ------
 //     Urls
 // ------ ------
@@ -60,6 +54,9 @@ struct_urls!();
 impl<'a> Urls<'a> {
     pub fn root(self) -> Url {
         self.base_url()
+    }
+    pub fn default(self) -> Url {
+        self.depth1()
     }
     pub fn depth1(self) -> Url {
         self.base_url().add_path_part(DEPTH1)
